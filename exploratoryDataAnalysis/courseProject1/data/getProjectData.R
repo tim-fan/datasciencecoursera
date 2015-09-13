@@ -9,11 +9,11 @@ getProjectData <- function(){
     unzip('household_power_consumption.zip')
   }
   
-  data <- read.csv2(datafileName)
+  data <- read.csv2(datafileName, na.strings = '?', dec=".", colClasses = c(rep('character',2), rep('numeric',7)))
+  
+  #we are only interested in data from days 2007-02-01 and 2007-02-02
+  data <- subset(data, grepl("^[12]/2/2007", Date))
   
   #convert date/time to POSIXct
   data <- within(data, {timestamp=strptime(paste(Date,Time),format = "%e/%m/%Y %H:%M:%S")})
-  
-  #we are only interested in data from days 2007-02-01 and 2007-02-02
-  data <- subset(data, timestamp > as.POSIXct("2007-02-01") & timestamp < as.POSIXct("2007-02-02"))
 }
