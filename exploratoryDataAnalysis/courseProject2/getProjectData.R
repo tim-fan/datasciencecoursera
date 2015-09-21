@@ -51,18 +51,33 @@ library("dplyr")
 # 
 
 #plot 4
-# coalCombustionSCCs <- 
-#   d$class %>%
-#   filter(grepl('combustion', SCC.Level.Four, ignore.case = TRUE) &&
-#          grepl('coal',       SCC.Level.Four, ignore.case = TRUE)) %>%
-#   select(SCC)
 
+#find SCC codes related to coal combustion.
+#To do this, just grep for rows where the word 'coal' AND 'combustion' appear.
+#However, exclude columns 'Short.Name' and 'EI.Sector' from the grep, to avoid categories 
+#like 'Ext Comb /Electric Gen /Anthracite Coal /Pulverized Coal', which appear to include coal
+#as well as non-coal related sources (too general!)
+
+#make functions for grepping for 'coal' and 'combustion'
 elementsContainString <- function(string) {function(elements) {any(grepl(paste0('\\b',string,'\\b'),elements, ignore.case = TRUE))}}
 containsCoal <- elementsContainString('coal')
 containsCombustion <- elementsContainString('combustion')
-coalCombustionSCCs <- 
+
+#do the grep and extract the remaining SCC codes
+coalCombustionClasses <- 
   d$class %>%
   select(-Short.Name, -EI.Sector) %>% #remove these columns from the following grep - they contain 'or' values
   filter(apply(., 1, containsCoal), apply(., 1, containsCombustion)) %>% 
-  select(SCC) 
+  select(SCC)
+coalCombustionSCCs <- coalCombustionClasses$SCC
 
+#now we know which codes relate to coal combustion. Filter the summary data
+#for coal-commbustion related data
+coalCombustionData <- 
+  d$summary %>%
+  filter(SCC %in% coalCombustionSCCs) %>%
+  group_by(year) %>%
+  summarise(aggregatedEmissions = sum(Emissions))
+
+#now we can plot the trend for aggregate coal combustion related emissions
+qplot(year, aggregatedEmissions, data = coalCombustionData, geom = 'line')
