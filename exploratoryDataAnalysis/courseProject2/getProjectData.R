@@ -142,25 +142,44 @@ qplot(
       )
 
 #plot6:
+library(gridExtra)
+
+#same logic from plot 5 for choosing mobile vehicle SCC codes
 mobileVehicleClasses <- 
   d$class %>% 
   filter(grepl('Mobile', EI.Sector) & !grepl('Equipment',EI.Sector))
 mobileVehicleSccs <- unique(mobileVehicleClasses$SCC)
 
+#In absolute terms the changes in Los Angeles County emissions are much greater
+#than those for Baltimore. 
 prcntOfFirstEl <- function(x) {x / first(x) * 100}
-
+fipsToString <- function(fips) {if (fips == "06037") "Los Angeles County" else "Baltimore City"}
 baltimoreLATotalEmissions <-  
   d$summary %>%
   filter(fips %in% c("24510", "06037"), SCC %in% mobileVehicleSccs) %>% 
   group_by(year, fips) %>% 
   summarise(aggregatedEmissions = sum(Emissions)) %>%
   group_by(fips) %>%
-  mutate(aggregatedEmissionPercentage = prcntOfFirstEl(aggregatedEmissions ))
+  mutate(aggregatedEmissionPrcntOfBaseYear = prcntOfFirstEl(aggregatedEmissions )) %>%
+  rowwise() %>%
+  mutate(County = fipsToString(fips))
 
-qplot(
-        x = year, 
-        y = aggregatedEmissionPercentage, 
-        data = baltimoreLATotalEmissions, 
-        geom = 'line', 
-        color = fips
-      )
+p1 <- qplot(
+  x = year, 
+  y = aggregatedEmissions, 
+  data = baltimoreLATotalEmissions, 
+  geom = 'line', 
+  color = County,
+  ylab = "Aggrregated Emissions\nPM2.5 in tons"
+)
+
+p2 <- qplot(
+  x = year, 
+  y = aggregatedEmissionPrcntOfBaseYear, 
+  data = baltimoreLATotalEmissions, 
+  geom = 'line', 
+  color = County,
+  ylim = c(0,160),
+  ylab = "Aggrregated Emissions\nPercentage of 1999 levels"
+)
+grid.arrange(p1,p2)
