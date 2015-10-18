@@ -10,12 +10,14 @@ shinyUI(fluidPage(
   sidebarPanel(
     p('This is the sidebar'),
     selectInput('xDataSelect', 'Select plot x-axis data', c('Number of attempts', 'Date')),
-    sliderInput('modelDegree', 'Select polynomial degree', 1, min = 1, max = 10)
+    sliderInput('modelDegree', 'Select polynomial degree', 1, min = 1, max = 10),
+    img(src="http://www.jumpstartsports.com/upload/images/Radnor_Basketball/448650-basketball__mario_sports_mix_.png", height = 200, width = 200)
   ),
   
   mainPanel(
     p('Here is the main panel'),
     p('You selected: '), textOutput('select1'),
+    p('I will get 10/10 at: '), textOutput('prediction'),
     plotOutput('bbplot')
   )
 ))
