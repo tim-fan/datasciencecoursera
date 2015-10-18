@@ -14,11 +14,13 @@ d$attemptNumber <- seq(1,nrow(d))
 getXDataInfo <- function(xDataSelect) {
   xDataByDate <- list(
     predictionRange = seq(d$Date[1],as.POSIXct("01/1/2050",format="%d/%m/%Y", origin="1970-01-01"), by = "days"),
-    xData = d[['Date']]
+    xData = d[['Date']],
+    xDataLabel = 'Date'
   )
   xDataByShots <- list(
     predictionRange = seq(1:1e4),
-    xData = d[['attemptNumber']]
+    xData = d[['attemptNumber']],
+    xDataLabel = 'Number of attempts'
   )
   
   if(xDataSelect == 'Date')
@@ -58,6 +60,23 @@ predictTenSunk <-function(polynomialDegree, xDataInfo){
   # browser()
 }
 
+predictionString <- function(prediction){
+  #Model Prediction possible values:
+  # I will get a 10/10 score on [date]
+  # I will get a 10/10 score after [n] attempts
+  # I will NEVER get a 10/10 score! (Time to give up!)
+  if (is.na(prediction)){
+    predStr <- 'I will NEVER a get 10/10 score! (Time to give up!)'
+  }
+  else if (is(prediction,'POSIXct')){
+    predStr <- paste('I will get a 10/10 score on', as.character(prediction, format = "%d/%m/%Y"), '.')
+  }
+  else{
+    predStr <- paste('I will get a 10/10 score after', as.character(prediction), 'attempts.')
+  }
+  predStr
+}
+
 # Define server logic required to plot various variables against mpg
 shinyServer(function(input, output) {
   cat('SHINYSERVER: start\n')
@@ -76,15 +95,16 @@ shinyServer(function(input, output) {
     qplot( x = xDataInfo$xData, 
            y = d$ShotsSunk, 
            geom = "point",
-           # ylim = c(0,10),
-           xlim = c(xDataInfo$xData[1], reactivePrediction())
+           xlim = c(xDataInfo$xData[1], reactivePrediction()),
+           xlab = xDataInfo$xDataLabel,
+           ylab = 'Number of shots sunk (out of 10)'
     ) +
     geom_smooth(method='lm', formula = y ~ poly(x, modelDegree), fullrange=TRUE) + 
     coord_cartesian(ylim = c(0,10)) + 
     theme_classic()
   }
-  
+  # cat(predictionString(reactivePrediction()))
   output$select1 = renderText(input$xDataSelect)
-  output$prediction = renderText(as.character(reactivePrediction()))
+  output$prediction = renderText(predictionString(reactivePrediction()))
   output$bbplot = renderPlot(makePlot(input$modelDegree))
 })

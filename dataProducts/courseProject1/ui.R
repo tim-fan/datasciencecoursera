@@ -15,9 +15,8 @@ shinyUI(fluidPage(
   ),
   
   mainPanel(
-    p('Here is the main panel'),
-    p('You selected: '), textOutput('select1'),
-    p('I will get 10/10 at: '), textOutput('prediction'),
-    plotOutput('bbplot')
+    plotOutput('bbplot'),
+    h3("Model's prediction:"),
+    textOutput('prediction')
   )
 ))
