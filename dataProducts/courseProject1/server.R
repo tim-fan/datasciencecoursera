@@ -39,7 +39,6 @@ predictTenSunk <-function(polynomialDegree, xDataInfo){
   #x-data to base the model on
   #just evaluates the model at all points in 'xDataInfo$predictionRange'
   #and returns the first value that predicts 10 or above
-  cat('predictTenSunk: start\n')
   
   #prepare the model for prediction
   xData <- as.numeric(xDataInfo$xData)
@@ -79,7 +78,6 @@ predictionString <- function(prediction){
 
 # Define server logic required to plot various variables against mpg
 shinyServer(function(input, output) {
-  cat('SHINYSERVER: start\n')
   
   #helper function: return x-data for plot based on user selection
   reactiveXDataInfo <- reactive({getXDataInfo(input$xDataSelect)})
@@ -88,7 +86,6 @@ shinyServer(function(input, output) {
   
   #plotting function: 
   makePlot <- function(modelDegree){
-    cat("makePlot: start\n")
     
     xDataInfo = reactiveXDataInfo()
     
@@ -103,7 +100,6 @@ shinyServer(function(input, output) {
     coord_cartesian(ylim = c(0,10)) + 
     theme_classic()
   }
-  # cat(predictionString(reactivePrediction()))
   output$select1 = renderText(input$xDataSelect)
   output$prediction = renderText(predictionString(reactivePrediction()))
   output$bbplot = renderPlot(makePlot(input$modelDegree))
