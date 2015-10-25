@@ -1,3 +1,6 @@
 [submodule "exploratoryDataAnalysis/courseProject1/ExData_Plotting1"]
 	path = exploratoryDataAnalysis/courseProject1/ExData_Plotting1
 	url = https://github.com/tim-fan/ExData_Plotting1.git
+[submodule "dataProducts/courseProject1/slidifyPitch"]
+	path = dataProducts/courseProject1/slidifyPitch
+	url = git@github.com:tim-fan/slidifyPitch.git
