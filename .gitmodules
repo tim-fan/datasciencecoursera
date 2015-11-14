@@ -4,3 +4,6 @@
 [submodule "ds9_dataProducts/courseProject1/slidifyPitch"]
 	path = ds9_dataProducts/courseProject1/slidifyPitch
 	url = git@github.com:tim-fan/slidifyPitch.git
+[submodule "ds5_reproducibleResearch/courseProject1/RepData_PeerAssessment1"]
+	path = ds5_reproducibleResearch/courseProject1/RepData_PeerAssessment1
+	url = https://github.com/tim-fan/RepData_PeerAssessment1
