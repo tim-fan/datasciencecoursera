@@ -1,17 +1,17 @@
 ---
-title: "Investigation into human and economic cost of various types of weather events, using the 'Storm Data' dataset"
+title: "Investigation into Human and Economic Cost of Various Weather Event Types, Using the 'Storm Data' Dataset"
 author: "Tim F"
 date: "22 November 2015"
 output: html_document
 ---
 
 ## Synopsis
-The following analysis uses the **Storm Data** dataset to investigate which types of weather events have shown the largest impact, in terms of both 
+The following analysis uses the [Storm Data](http://www.ncdc.noaa.gov/stormevents/details.jsp) dataset to investigate which types of weather events have shown the largest impact, in terms of both 
 economic impact and impact to human health. The data cleaning process is demonstrated, in which only the most recent records are kept (a justification 
 is given in the appendix). The cleaned data show that tornadoes are the most harmful in both respects, showing high rates of fatalities, injuries and property damage. However tornadoes are not the only significant source of harm identified in the dataset. 
 
 ## Data Processing
-There should be a section titled Data Processing which describes (in words and code) how the data were loaded into R and processed for analysis. In particular, your analysis must start from the raw CSV file containing the data. You cannot do any preprocessing outside the document. If preprocessing is time-consuming you may consider using the cache = TRUE option for certain code chunks.
+The following section shows preprocessing performed on the raw Storm Data dataset.
 
 Dependencies for this analysis:
 ```{r}
@@ -28,6 +28,7 @@ download.file('https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.
 stormData <- read.csv(zippedFilename)
 stormData$BGN_DATE  <-  as.POSIXct(stormData$BGN_DATE, format = "%m/%d/%Y")
 ```
+(Date downloaded: 22 November 2015)
 
 I've decided that it is most straight-forward to only use data from 2007 to present, as these data are much cleaner
 than prior data. See the appendix for further justification of this.
@@ -95,6 +96,7 @@ qplot(
   ylab = 'Number of fatalities'
 ) + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 ```
+
 This plot shows tornadoes to be by far the largest cause of fatalities in the present dataset. 
 
 The dataset also provides figures for number of injuries for each event. The following plot shows the relationship between 
@@ -111,6 +113,7 @@ qplot(
   ylab = 'Number of injuries'
 ) + theme(legend.title=element_blank())
 ```
+
 As the plot indicates, the relationship between injuries and fatalities is not strictly linear for these event types.
 For instance, flash flooding has a relativly high fatality rate compared to injury rate, while lightning is the opposite.
 
@@ -153,6 +156,7 @@ qplot(
   ylab = 'Total Damages (dollars)'
 ) + theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 ```
+
 From this we can see that a fairly small number of event types account for a large majority of total economic damages. For instance, the top three
 event types show more aggregate damages than the rest of the event types combined:
 ```{r cache=TRUE}
@@ -197,6 +201,7 @@ This function can then be used to look at how many unique event codes exist if w
 nEvtypes <- sapply(1990:2010, function(x) {categoriesSinceYear('EVTYPE', x)})
 data.frame(year = 1990:2010, nEvtypes = nEvtypes)
 ```
+
 From this you can see that if we include all data from 1990 to today, our dataset would have almost a thousand different event codes.
 These codes are hard to make sense of, because of the potential for overlap and duplication (e.g. there are codes for both 'STRONG WIND' and 'HIGH WIND')
 Keep in mind also that there are only 48 event types officially defined in [NWS Directive 10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf).
