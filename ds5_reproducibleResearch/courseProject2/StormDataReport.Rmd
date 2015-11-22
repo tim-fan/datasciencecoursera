@@ -2,22 +2,29 @@
 title: "Investigation into Human and Economic Cost of Various Weather Event Types, Using the 'Storm Data' Dataset"
 author: "Tim F"
 date: "22 November 2015"
-output: html_document
+output: 
+  html_document:
+    theme: flatly
+    toc: true
 ---
-
+  
+  
 ## Synopsis
-The following analysis uses the [Storm Data](http://www.ncdc.noaa.gov/stormevents/details.jsp) dataset to investigate which types of weather events have shown the largest impact, in terms of both 
+The following analysis uses the [Storm Data](http://www.ncdc.noaa.gov/stormevents/) dataset to investigate which types of weather events have shown the largest impact, in terms of both 
 economic impact and impact to human health. The data cleaning process is demonstrated, in which only the most recent records are kept (a justification 
 is given in the appendix). The cleaned data show that tornadoes are the most harmful in both respects, showing high rates of fatalities, injuries and property damage. However tornadoes are not the only significant source of harm identified in the dataset. 
-
+  
+  
 ## Data Processing
 The following section shows preprocessing performed on the raw Storm Data dataset.
 
 Dependencies for this analysis:
-```{r}
+```{r message=FALSE}
 library(dplyr)
 library(ggplot2)
 library(lubridate)
+library(xtable)
+library(knitr)
 ```
 
 Lets download the storm data from the course website:
@@ -25,10 +32,22 @@ Lets download the storm data from the course website:
 zippedFilename <- 'data/stormData.csv.bz2'
 dir.create('data', showWarnings = FALSE)
 download.file('https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2', destfile = zippedFilename)
-stormData <- read.csv(zippedFilename)
-stormData$BGN_DATE  <-  as.POSIXct(stormData$BGN_DATE, format = "%m/%d/%Y")
 ```
 (Date downloaded: 22 November 2015)
+
+... and read the data into R:
+```{r}
+#small function for reading the data file, which will be used here as well as in the appendix
+readDatafile <- function(){
+  stormData <- read.csv(zippedFilename)
+  stormData$BGN_DATE  <-  as.POSIXct(stormData$BGN_DATE, format = "%m/%d/%Y")
+  stormData$Event.Type <- stormData$EVTYPE #ne-named for easier reading
+  stormData
+}
+
+stormData <- readDatafile()
+```
+
 
 I've decided that it is most straight-forward to only use data from 2007 to present, as these data are much cleaner
 than prior data. See the appendix for further justification of this.
@@ -37,14 +56,14 @@ stormData <-filter(stormData, BGN_DATE >= ymd("2007-01-01"))
 stormData <- droplevels(stormData)
 ```
 
-For value of property and crop damage, values are stored as dollar-mulitplier pairs, which are stored in separate columns.
-The mulitpliers are:
+For value of property and crop damage, values are stored as dollar-multiplier pairs, which are stored in separate columns.
+The multipliers are:
 ```{r cache=TRUE}
-unique(stormData$PROPDMGEXP)
+levels(stormData$PROPDMGEXP)
 ```
 where K = thousands, M = millions, B = billions and '0' corresponds to a single event where damages were recorded as zero.
 
-Create a 'total.damages' column, where these multipliers have been applied, and crop and property damages have been combined.
+For assessing economic consequences, create a 'Total.Damages' column, where these multipliers have been applied, and crop and property damages have been combined.
 ```{r cache=TRUE}
 multiplyDamages <- function(value, multiplier){
   switch(as.character(multiplier),
@@ -58,7 +77,7 @@ multiplyDamages <- function(value, multiplier){
 stormData <- 
   stormData %>%
   rowwise() %>%
-  mutate(total.damages = multiplyDamages(PROPDMG, PROPDMGEXP)
+  mutate(Total.Damages = multiplyDamages(PROPDMG, PROPDMGEXP)
                        + multiplyDamages(CROPDMG, CROPDMGEXP))
 ```
 
@@ -68,26 +87,32 @@ In this table, compute the total damage, fatalities and injuries for each event 
 ```{r cache=TRUE}
 impactSummary <- 
   stormData %>% 
-  group_by(EVTYPE) %>% 
-  summarise(total.damages = sum(total.damages), 
+  ungroup() %>%
+  group_by(Event.Type) %>% 
+  summarise(Total.Damages = sum(Total.Damages), 
             Fatalities = sum(FATALITIES), 
             Injuries = sum(INJURIES)) %>%
-  arrange(desc(total.damages))
-
-head(impactSummary)
+  arrange(desc(Total.Damages))
 ```
 
+
+An example excerpt from the generated summary table:
+```{r cache=TRUE}
+kable(head(impactSummary))
+```
+  
+  
 ## Results
 This section addresses the specific questions put forth for this assignment.
 
-### Q1: Across the United States, which types of events (as indicated in the EVTYPE variable) are most harmful with respect to population health?
+### Q1: Across the United States, which types of events (as indicated in the Event.Type variable) are most harmful with respect to population health?
 This question is answered by investigating total fatalities and injuries for each event type.
 
 The following plot shows total fatalities for each event type over the selected period (from 2007 up to 2012):
 ```{r cache=TRUE}
 qplot(
-  data = mutate(impactSummary, EVTYPE = reorder(EVTYPE, desc(Fatalities))), 
-  x = EVTYPE, 
+  data = mutate(impactSummary, Event.Type = reorder(Event.Type, desc(Fatalities))), 
+  x = Event.Type, 
   y = Fatalities, 
   geom = 'bar', 
   stat = 'identity',
@@ -106,8 +131,9 @@ qplot(
   data = impactSummary %>% arrange(desc(Fatalities)) %>% slice(1:6), 
   x = Fatalities, 
   y = Injuries, 
-  shape = EVTYPE, 
-  color = EVTYPE, size = I(5),
+  shape = Event.Type, 
+  color = Event.Type, 
+  size = I(5),
   main = 'Number of fatalities vs. number of injuries for six event\n types with highest fatality rates, 2007-2012',
   xlab = 'Number of fatalities',
   ylab = 'Number of injuries'
@@ -115,29 +141,33 @@ qplot(
 ```
 
 As the plot indicates, the relationship between injuries and fatalities is not strictly linear for these event types.
-For instance, flash flooding has a relativly high fatality rate compared to injury rate, while lightning is the opposite.
+For instance, flash flooding has a relatively high fatality rate compared to injury rate, while lightning is the opposite.
 
-Which event type can be said to have the worst effect on public health depends partly on the fatality/injury 'exchange rate',
+Which event type can be said to have the worst effect on public health depends partly a given fatality/injury 'exchange rate',
 or how much significance is placed on a single injury with respect to a single fatality. Determining this rate is outside of the scope
 of this analysis. 
 
 That said, it is clear to see that in the given dataset tornadoes have the greatest impact on public health, as they have contributed 
-to far more injuries *and* fatalities than any othe type of event. 
+to far more injuries *and* fatalities than any other type of event. 
 
 For reference, here are the 5 largest causes of fatalities:
 ```{r cache=TRUE}
-impactSummary %>% 
-  arrange(desc(Fatalities)) %>% 
-  select(EVTYPE, Fatalities) %>% 
-  slice(1:5)
+kable(
+  impactSummary %>% 
+    arrange(desc(Fatalities)) %>% 
+    select(Event.Type, Fatalities) %>% 
+    slice(1:5)
+)
 ```
 
 And here are the 5 largest causes of injuries:
 ```{r cache=TRUE}
-impactSummary %>% 
-  arrange(desc(Injuries)) %>% 
-  select(EVTYPE, Injuries) %>% 
-  slice(1:5)
+kable(
+  impactSummary %>% 
+    arrange(desc(Injuries)) %>% 
+    select(Event.Type, Injuries) %>% 
+    slice(1:5)
+)
 ```
 
 ### Q2: Across the United States, which types of events have the greatest economic consequences?
@@ -146,9 +176,9 @@ This question is answered by investigating the sum of all property and crop dama
 The following plot shows the total of all property and crop damages over the selected period (from 2007 up to 2012).
 ```{r cache=TRUE}
 qplot(
-  data = mutate(impactSummary, EVTYPE = reorder(EVTYPE, desc(total.damages))), 
-  x = EVTYPE, 
-  y = total.damages, 
+  data = mutate(impactSummary, Event.Type = reorder(Event.Type, desc(Total.Damages))), 
+  x = Event.Type, 
+  y = Total.Damages, 
   geom = 'bar', 
   stat = 'identity',
   main = 'Total damages (dollars) aggregated over all event types, 2007-2012',
@@ -158,25 +188,25 @@ qplot(
 ```
 
 From this we can see that a fairly small number of event types account for a large majority of total economic damages. For instance, the top three
-event types show more aggregate damages than the rest of the event types combined:
+event types contribute greater aggregate damages than all other event types combined:
 ```{r cache=TRUE}
-with(impactSummary, sum(total.damages[1:3]) > sum(total.damages[-(1:3)]))
+with(impactSummary, sum(Total.Damages[1:3]) > sum(Total.Damages[-(1:3)]))
 ```
 
-These top three event types, which a responsible for the majority of economic damages for the events in the dataset, are shown below:
+These top three event types, which are responsible for the majority of economic damages in the dataset, are shown below:
 ```{r cache=TRUE}
-impactSummary[1:3,c('EVTYPE', "total.damages")]
+kable(impactSummary[1:3,c('Event.Type', "Total.Damages")])
 ```
-
-
+  
+  
 ## Apendix
 
-### Justification for subsetting from 2007 to present:
+### Justification for subsetting from 2007 to present
 According to http://www.ncdc.noaa.gov/stormevents/details.jsp, only a limited number of event types were recorded
 prior to 1996. Hence it seems that to avoid over-representing certain event types, only data from 1996 onward should
 be used for this analysis.
 
-Investigating further, and in light of the discussion presented in [The History of the Storm Events Database] (http://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/The-History-of-the-Storm-Events-Database.docx), I had a
+Investigating further, and in light of the discussion presented in [The History of the Storm Events Database](http://www1.ncdc.noaa.gov/pub/data/swdi/stormevents/The-History-of-the-Storm-Events-Database.docx), I had a
 look into how event codes have been assigned throughout the dataset. The aforementioned document 
 states that the cleanest available data is from 2006 to the present. The following steps investigate this:
 
@@ -184,8 +214,7 @@ Here I create a function which, for a given year and dataset field, will tell me
 there are for that field, from the given year to the present. Specifically I'm looking to see if there is
 a proliferation of event codes as we head backwards in time.
 ```{r cache=TRUE}
-stormData <- read.csv(zippedFilename)
-stormData$BGN_DATE  <-  as.POSIXct(stormData$BGN_DATE, format = "%m/%d/%Y")
+stormData <- readDatafile()
 
 categoriesSinceYear <- function(category, givenYear) {
   subsetSinceYear <- 
@@ -198,14 +227,20 @@ categoriesSinceYear <- function(category, givenYear) {
 
 This function can then be used to look at how many unique event codes exist if we subset the data from a given year onwards:
 ```{r cache=TRUE}
-nEvtypes <- sapply(1990:2010, function(x) {categoriesSinceYear('EVTYPE', x)})
-data.frame(year = 1990:2010, nEvtypes = nEvtypes)
+nEvTypes <- sapply(1990:2010, function(x) {categoriesSinceYear('Event.Type', x)})
+data.frame(year = 1990:2010, nEvTypes = nEvTypes)
 ```
 
 From this you can see that if we include all data from 1990 to today, our dataset would have almost a thousand different event codes.
 These codes are hard to make sense of, because of the potential for overlap and duplication (e.g. there are codes for both 'STRONG WIND' and 'HIGH WIND')
 Keep in mind also that there are only 48 event types officially defined in [NWS Directive 10-1605](http://www.ncdc.noaa.gov/stormevents/pd01016005curr.pdf).
 
-On the other hand, if we subset our data from 2006 onwards, we will have a much tidier `r nEvtypes[17]` different codes, or if we subset from 2007 we have the official number of 48 different events. 
+On the other hand, if we subset our data from 2006 onwards, we will have a much tidier `r nEvTypes[17]` different codes, or if we subset from 2007 we have the official number of 48 different events. 
 
 In light of this, I've chosen to subset from 2007 onwards, with the justification that this leaves a much tidier dataset to work with. Note that this comes with limitations, for instance I am less likely to have accounted for more rare, high-impact weather events. Notably, hurricane Katrina is not included in the subset of data used for this analysis. 
+
+### Source for this presentation
+This presentation was written in [R markdown](http://rmarkdown.rstudio.com/) with [knitr](http://yihui.name/knitr/). The source is available in my [github repository](https://github.com/tim-fan/datasciencecoursera/tree/master/ds5_reproducibleResearch/courseProject2).
+  
+  
+  
