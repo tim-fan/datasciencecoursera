@@ -1,0 +1,6 @@
+##Directory Overview:
+
+Files for assignment 2 of Coursera course [Reproducible Research](https://www.coursera.org/course/repdata).
+
+StormDataReport.Rmd contains R markdown for the final report, which is compiled with knitr. The output is saved in StormDataReport.html, and also hosted on Rpubs [here](http://rpubs.com/tim-fanselow/RepDataA2_WeatherEvents).
+
